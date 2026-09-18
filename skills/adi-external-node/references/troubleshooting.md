@@ -1,4 +1,4 @@
-# ADI external node — troubleshooting
+# ADI external node: troubleshooting
 
 Symptom → cause → action. Check the read-only diagnosis before changing
 anything: `scripts/en-status.sh`.
@@ -10,7 +10,7 @@ replay has progressed.
 
 **Action:** wait. Confirm progress with `Replay block` lines in the logs and a
 rising `eth_blockNumber`. A full replay takes hours. Do not restart the node
-to "fix" this — each restart restarts the replay from where it left off, and
+to "fix" this. Each restart restarts the replay from where it left off, and
 repeated restarts make it take longer, not shorter.
 
 ## Behind, and not catching up
@@ -19,10 +19,10 @@ Distinguish the two cases before acting:
 
 | Observation | Reading |
 |---|---|
-| `discovered executed batch` / `last_executed_block` climbing, `frontier normal` | L1 watcher healthy. The remaining work is L2 replay — normal |
+| `discovered executed batch` / `last_executed_block` climbing, `frontier normal` | L1 watcher healthy. The remaining work is L2 replay (normal) |
 | `Replay block #N` lines appearing steadily | Replay is progressing |
 | `eth_syncing` returns a `currentBlock` that never changes | genuinely stuck |
-| No new log lines of any kind for a long stretch | stalled — investigate |
+| No new log lines of any kind for a long stretch | stalled, investigate |
 
 **Action when stalled:** `docker logs --tail 200 adi_mainnet_external_node`.
 Look for panics, `verifier authorization failures`, or `missing
@@ -80,7 +80,7 @@ the usual reason). Merging is deliberately not attempted: the upgrade path
 must be reproducible.
 
 **Action:** inspect with `git -C ~/ADI-Stack-EN-Setup-script status`, decide
-whether the local edit is still needed (after v0.20.12 it usually is not —
+whether the local edit is still needed (after v0.20.12 it usually is not:
 ports and variables moved into the new compose), then `git checkout -- <file>`
 or `git stash`. Never force-pull over an unknown edit.
 
@@ -96,9 +96,9 @@ forwarding a transaction from a lagging node is not meaningful.
 **Cause:** `network_secret_key` / `EXTERNAL_NETWORK_SECRET_KEY` changed
 between starts. Losing it forces a full resync.
 
-**Action:** find the original value before doing anything else — it was
+**Action:** find the original value before doing anything else. It was
 printed once in the logs at first start (`EXTERNAL_NETWORK_SECRET_KEY not
-provided — generated automatically: <hex>`), and `adi-node` stores it in
+provided, generated automatically: <hex>`), and `adi-node` stores it in
 `~/.adi-node/state.json`. Restore it and restart. Do not generate a new key
 while trying to recover an existing node's identity.
 

@@ -1,4 +1,4 @@
-# ADI external node — network and upgrade reference
+# ADI external node: network and upgrade reference
 
 ## Networks
 
@@ -12,7 +12,7 @@
 
 Chain IDs and RPC endpoints verified against the live networks (`eth_chainId`,
 2026-09). The node's own client version is reported by
-`web3_clientVersion` — mainnet currently answers `zksync-os/v0.21.1` on the
+`web3_clientVersion`. Mainnet currently answers `zksync-os/v0.21.1` on the
 main node, while the published external node image is `v0.20.12-b1`. Those
 numbers differ and that is expected: the main node and the external node are
 separate builds.
@@ -22,10 +22,10 @@ separate builds.
 | Port | Protocol | Service |
 |---|---|---|
 | 3050 | TCP | JSON-RPC (`rpc_address`) |
-| 3060 | TCP + UDP | P2P devp2p (`network_port`) — v0.20.12 and later |
+| 3060 | TCP + UDP | P2P devp2p (`network_port`), v0.20.12 and later |
 | 3071 | TCP | status server (`status_server_address`) |
 | 3312 | TCP | Prometheus metrics (`observability_prometheus_port`) |
-| 3054 | TCP | **removed** — HTTP replay, v0.13.0 only |
+| 3054 | TCP | **removed**, HTTP replay, v0.13.0 only |
 
 Both TCP and UDP 3060 must be reachable outbound. If a firewall allows only
 one of the two, the node may boot but never peer.
@@ -49,8 +49,8 @@ older checkout is legacy.
 `BOOT_NODE_URLS` falls back to these per-network defaults (from
 `external-node.sh` in the setup repo):
 
-- mainnet — `enode://0x433c50a2c2b4091330edff3bde14be9913f7fcde35c5267f3b2281b7031923518b18f3c99b83bf5edb2dbe708d9ec119cceaf4012f5f601525beaf9c564dd57a@74.162.154.230:3060`
-- testnet — `enode://0x89317fb81e979bd5b0d102f2c3da3ccb569cf2b2802fb0c3af562b625b1d695dc44b5c6ef3848697dce61e6cc9a8f9fe6ad89ff08cfb2ab4e51bc7a55986ee6f@20.233.0.124:3060`
+- mainnet: `enode://0x433c50a2c2b4091330edff3bde14be9913f7fcde35c5267f3b2281b7031923518b18f3c99b83bf5edb2dbe708d9ec119cceaf4012f5f601525beaf9c564dd57a@74.162.154.230:3060`
+- testnet: `enode://0x89317fb81e979bd5b0d102f2c3da3ccb569cf2b2802fb0c3af562b625b1d695dc44b5c6ef3848697dce61e6cc9a8f9fe6ad89ff08cfb2ab4e51bc7a55986ee6f@20.233.0.124:3060`
 
 Only override these if ADI publishes replacements; a stale boot node is the
 usual cause of a node that runs but never finds peers.
@@ -72,7 +72,7 @@ The one breaking change operators hit. Full checklist lives in the setup repo
 1. Stop: `./external-node.sh stop`, confirm with `./external-node.sh status`.
 2. Pull the repo: `git pull origin main`. This brings the new compose, the new
    genesis (with `execution_version` removed), and the v0.20.12 image tag.
-   Local compose edits will block the pull — the CLI and the script both treat
+   Local compose edits will block the pull; the CLI and the script both treat
    a diverged checkout as a hard error rather than merging.
 3. Delete legacy variables from any local `.env` or override file: the
    `sequencer_block_replay_*`, `prover_api_object_store_*`, and
@@ -91,7 +91,7 @@ recreated from the old compose (usually a checkout that was not pulled).
 
 ## Version-specific notes
 
-- **v0.20.12 changed two logging defaults** — `observability_log_format` is now
+- **v0.20.12 changed two logging defaults**: `observability_log_format` is now
   `json` and color is off. Logs are still greppable, but expect JSON lines.
 - **`sequencer_revm_consistency_checker_enabled`** flipped to `true`; it can be
   disabled for faster local startup.

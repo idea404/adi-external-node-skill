@@ -1,6 +1,6 @@
 ---
 name: adi-external-node
-description: Operates and monitors an ADI Chain external node running on this machine — start, stop, upgrade to a new EN version, and diagnose sync/health problems. Use when the user mentions an ADI external node, adi_mainnet_external_node or adi_testnet_external_node containers, external-node.sh, "node is not syncing", "node is behind", upgrading the ADI node, or checking whether an ADI node is healthy.
+description: "Operates and monitors an ADI Chain external node running on this machine: start, stop, upgrade to a new EN version, and diagnose sync/health problems. Use when the user mentions an ADI external node, adi_mainnet_external_node or adi_testnet_external_node containers, external-node.sh, \"node is not syncing\", \"node is behind\", upgrading the ADI node, or checking whether an ADI node is healthy."
 license: MIT
 compatibility: Requires docker with the compose plugin, git, and outbound network access. Assumes the ADI-Stack-EN-Setup-script checkout and the running external_node container.
 metadata:
@@ -67,7 +67,7 @@ P2P peers, pipeline lag, and disk usage, then a verdict:
 | Verdict | Exit | Meaning |
 |---|---|---|
 | `HEALTHY` | 0 | caught up (≤5 blocks) |
-| `SYNCING` | 0 | behind but the head is advancing — normal, leave it alone |
+| `SYNCING` | 0 | behind but the head is advancing (normal, leave it alone) |
 | `STALLED` | 1 | behind, head not advancing in the sample window |
 | `DEGRADED` | 1 | up but no P2P peers, or RPC not answering yet |
 | `DOWN` | 2 | no container, no RPC |
@@ -138,11 +138,11 @@ Start requirements:
 - `--l1-rpc-url` (or `GENERAL_L1_RPC_URL`) is required, and it must be an
   **archive-capable** Ethereum L1 RPC. A pruned endpoint makes the node panic
   at startup with `state at block is pruned`.
-- `EXTERNAL_NETWORK_SECRET_KEY` — reuse the saved value on every restart. If
+- `EXTERNAL_NETWORK_SECRET_KEY`: reuse the saved value on every restart. If
   the operator has it, pass `--external-network-secret-key <key>`. If nobody
   has it, do not invent one on an existing node: first check the logs and any
   ops notes for the auto-generated value.
-- `BOOT_NODE_URLS` — falls back to the per-network default.
+- `BOOT_NODE_URLS`: falls back to the per-network default.
 
 ## Upgrading
 
@@ -168,6 +168,6 @@ directory and key are never touched by this, so it returns to the prior state.
 
 ## Files in this skill
 
-- `scripts/en-status.sh` — read-only health snapshot with a verdict.
-- `references/network.md` — networks, ports, versions, upgrade steps.
-- `references/troubleshooting.md` — symptom → cause → action.
+- `scripts/en-status.sh`: read-only health snapshot with a verdict.
+- `references/network.md`: networks, ports, versions, upgrade steps.
+- `references/troubleshooting.md`: symptom → cause → action.

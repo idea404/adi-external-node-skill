@@ -1,4 +1,4 @@
-# ADI External Node — agent skill
+# ADI External Node agent skill
 
 An [Agent Skill](https://agentskills.io/specification) that lets any coding
 agent safely operate and monitor an ADI Chain external node: start, stop,
@@ -6,7 +6,7 @@ upgrade between EN versions, and diagnose the usual sync/health problems.
 
 Drop-in for engineers who run an external node on a VM or VPS with Docker and
 the [ADI-Stack-EN-Setup-script](https://github.com/ADI-Foundation-Labs/ADI-Stack-EN-Setup-script)
-checkout — no build step, no extra tooling, no knowledge of ADI internals
+checkout. No build step, no extra tooling, no knowledge of ADI internals
 required from the agent.
 
 ## Install
@@ -43,7 +43,7 @@ lag, and disk usage, and ends in a single verdict line:
 | Verdict | Exit | Meaning |
 |---|---|---|
 | `HEALTHY` | 0 | caught up |
-| `SYNCING` | 0 | behind, head advancing — normal |
+| `SYNCING` | 0 | behind, head advancing (normal) |
 | `STALLED` | 1 | behind, head not advancing |
 | `DEGRADED` | 1 | up, but no peers or RPC not answering yet |
 | `DOWN` | 2 | no container, no RPC |
@@ -71,7 +71,7 @@ encodes hard rules rather than relying on the model's judgement:
 
 - never delete the chain data directory or regenerate the P2P secret key
   (either forces a full resync from genesis)
-- upgrades are treated as coordinated, network-wide events — the skill refuses
+- upgrades are treated as coordinated, network-wide events. The skill refuses
   to start one unless ADI has announced the main node is upgraded
 - diagnosis comes before change, via a script that cannot mutate anything
 - rollback is a documented path (revert the setup repo, restart with the same
@@ -97,4 +97,4 @@ every verdict and exit code.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

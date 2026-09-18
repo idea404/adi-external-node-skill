@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# en-status.sh — read-only health snapshot of an ADI external node.
+# en-status.sh: read-only health snapshot of an ADI external node.
 #
 # Answers the two questions an operator actually has:
 #   1. Is the node up and serving RPC?
@@ -108,7 +108,7 @@ say
 say "== node RPC ($RPC) =="
 HEAD="$(eth_block "$RPC")"
 if [[ -z "$HEAD" ]]; then
-  note "unreachable — the node is not serving JSON-RPC"
+  note "unreachable: the node is not serving JSON-RPC"
 else
   note "head block: $HEAD"
   SYNCING="$(rpc "$RPC" eth_syncing | sed -n 's/.*"result"[[:space:]]*:[[:space:]]*\([^},]*\).*/\1/p')"
@@ -119,7 +119,7 @@ say
 say "== reference RPC ($NETWORK) =="
 TARGET="$(eth_block "$REF_RPC")"
 if [[ -z "$TARGET" ]]; then
-  note "$REF_RPC unreachable — cannot compute lag"
+  note "$REF_RPC unreachable: cannot compute lag"
 else
   note "target block: $TARGET"
 fi
@@ -164,7 +164,10 @@ fi
 say
 say "== disk =="
 if [[ -z "$DATA_DIR" && -n "$CONTAINER_STATUS" ]]; then
-  DATA_DIR="$(docker ps --format '{{.Names}}' 2>/dev/null | sed -n 's/^\(adi_.*_external_node\)$/\1/p' | head -1 | xargs -r -I{} docker inspect --format '{{range .Mounts}}{{if eq .Destination "/chain"}}{{.Source}}{{end}}{{end}}' {} 2>/dev/null)"
+  NODE_CONTAINER="$(docker ps --format '{{.Names}}' 2>/dev/null | sed -n 's/^\(adi_.*_external_node\)$/\1/p' | head -1)"
+  if [[ -n "$NODE_CONTAINER" ]]; then
+    DATA_DIR="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/chain"}}{{.Source}}{{end}}{{end}}' "$NODE_CONTAINER" 2>/dev/null)"
+  fi
 fi
 if [[ -n "$DATA_DIR" && -d "$DATA_DIR" ]]; then
   note "data dir: $DATA_DIR"
@@ -182,40 +185,40 @@ say
 say "== verdict =="
 if [[ -z "$HEAD" ]]; then
   if [[ -n "$CONTAINER_STATUS" ]]; then
-    say "DEGRADED — container is running ($CONTAINER_STATUS) but RPC is not answering yet."
+    say "DEGRADED: container is running ($CONTAINER_STATUS) but RPC is not answering yet."
     note "A node that just started takes minutes before RPC serves. If it has been longer, check: docker logs --tail 100 <container>"
     exit 1
   fi
-  say "DOWN — no external node container and no RPC."
+  say "DOWN: no external node container and no RPC."
   exit 2
 fi
 
 if [[ -z "$TARGET" ]]; then
-  say "UNKNOWN — node RPC is up but the reference RPC is unreachable; lag cannot be computed."
+  say "UNKNOWN: node RPC is up but the reference RPC is unreachable; lag cannot be computed."
   exit 1
 fi
 
 if [[ -n "$PEERS" && "$PEERS" -eq 0 ]]; then
-  say "DEGRADED — no P2P peers. The node depends on peers (or the main node) to receive blocks."
+  say "DEGRADED: no P2P peers. The node depends on peers (or the main node) to receive blocks."
   note "Check that outbound TCP+UDP 3060 is allowed and that boot nodes are configured."
   exit 1
 fi
 
 if [[ "$LAG" -le 5 ]]; then
-  say "HEALTHY — caught up (lag $LAG blocks)."
+  say "HEALTHY: caught up (lag $LAG blocks)."
   exit 0
 fi
 
 if [[ -n "$RATE" ]]; then
   ETA=""
   MINUTES=$(( LAG * SAMPLE / RATE / 60 ))
-  [[ "$MINUTES" -gt 0 ]] && ETA=" — at the current rate, roughly ${MINUTES} min to catch up"
-  say "SYNCING — $LAG blocks behind, head advancing${ETA}."
+  [[ "$MINUTES" -gt 0 ]] && ETA="; at the current rate, roughly ${MINUTES} min to catch up"
+  say "SYNCING: $LAG blocks behind, head advancing${ETA}."
   note "A full replay from genesis takes hours. This is normal on a fresh node."
   exit 0
 fi
 
-say "STALLED — $LAG blocks behind and the head did not advance in ${SAMPLE}s."
+say "STALLED: $LAG blocks behind and the head did not advance in ${SAMPLE}s."
 note "If the node started recently it may still be replaying; watch the logs for 'Replay block' lines."
 note "If it stays flat, check the broken-signal list in references/troubleshooting.md."
 exit 1
