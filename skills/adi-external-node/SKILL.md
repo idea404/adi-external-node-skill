@@ -19,7 +19,7 @@ Read these before touching anything.
 
 1. **Never delete or "reset" the chain data directory.** `<network>_data` holds the RocksDB state and the node's P2P identity. Deleting it forces a full resync from genesis (hours). There is no scenario in this skill where removing it is the right first move.
 2. **Never regenerate the network secret key on a running node.** The key is the node's P2P identity. Losing it means a full resync. The setup script auto-generates and prints one on first start; that value must be reused.
-3. **Upgrades are coordinated and network-wide.** Nodes on different versions do not peer with each other and their batch verification transport is incompatible. Only upgrade after ADI announces the main node is upgraded. Upgrading early leaves the node unable to sync.
+3. **Upgrades are coordinated and network-wide.** Nodes on different versions do not peer with each other and their batch verification transport is incompatible. Only upgrade once the main node is on the new version. Upgrading early leaves the node unable to sync.
 4. **Verify before acting.** Run `scripts/en-status.sh` first; it is read-only. Prefer read-only diagnosis until you can name the fault.
 5. **Do not run `external-node.sh down` or `docker compose down` to "restart" a node** unless a stop is genuinely what is wanted: `down` removes the containers. `stop` preserves them.
 
@@ -38,6 +38,31 @@ docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}'
 | image tag `…:v0.13.0-b4` | old version (HTTP replay), ports 3050/3054/3071/3312 |
 
 Network defaults, ports, data directories, and the upgrade mechanics are in [references/network.md](references/network.md). Read it before any upgrade.
+
+## Where the authoritative information lives
+
+The node itself tells you almost everything (versions, ports, peers, sync). For the things it cannot:
+
+| What | Where |
+|---|---|
+| Node docs (running, monitoring, requirements) | [docs.adi.foundation](https://docs.adi.foundation), page "Run Your Own Node" |
+| **Upgrade signal**, the gate on any upgrade | the `ADI-Stack-EN-Setup-script` checkout: a new version tag in the compose file, plus a guide under `upgrades/` |
+| Compose files, genesis, upgrade guides | the same checkout, `upgrades/` directory |
+| Network endpoints, container prefixes, data dirs, boot nodes | `references/network.md`, or `external-node.sh` in the checkout |
+| Contract addresses, ABIs, bridge details | `docs.adi.foundation` and the `ADI-Stack-Contracts` repo. Not needed to run a node |
+
+Announcement discipline matters: ADI upgrades clusters as coordinated events, so "is this upgrade live yet" is a real question with a real answer, not a formality. Read it off the repo where you can:
+
+```bash
+# What version does the checkout want, and what is running?
+cd ~/ADI-Stack-EN-Setup-script && git fetch --quiet && git log --oneline -5
+grep -o 'EN_VERSION:-[^}]*' docker-compose.<network>.yml
+docker ps --format '{{.Image}}' | grep external_node
+```
+
+A version in the compose file that is newer than what is running means an upgrade exists. It does not by itself mean the network is ready: the main node moves first, and an EN upgraded early will not peer. When the repo shows a new version but you cannot confirm the main node has moved, ask the operator to confirm before upgrading. Never infer readiness from the image tag alone.
+
+Deliberately not carried here: contract addresses and ABIs, bridge mechanics, L3 deployment, token details. None of it affects running or monitoring an external node, and stale copies are worse than none.
 
 ## Health check
 
@@ -88,7 +113,8 @@ docker logs --tail 200 adi_mainnet_external_node 2>&1 | grep -E 'Connected to pe
 
 Fresh start + head advancing + RPC serving = **syncing, let it finish**. Full replay from genesis takes hours; a node that started recently is not broken. Only escalate to fault-finding when the head is flat *and* one of these is true:
 
-- `eth_syncing` frozen at the same `currentBlock` for a long stretch - repeated panics / restarts, `verifier authorization failures`, `missing VerifyBatchResult`
+- `eth_syncing` frozen at the same `currentBlock` for a long stretch
+- repeated panics / restarts, `verifier authorization failures`, or `missing VerifyBatchResult`
 - zero peers and no `Connected to peer` lines
 
 Diagnosis table for each fault: [references/troubleshooting.md](references/troubleshooting.md).
@@ -117,7 +143,7 @@ Start requirements:
 
 An upgrade is a coordinated, network-wide event. Follow [references/network.md](references/network.md) for the full sequence and the version-specific steps; the shape is always:
 
-1. **Confirm ADI has announced the main node is on the new version.** If not announced, stop here. Upgrading early means no peering and no sync.
+1. **Confirm the main node is already on the new version.** If it is not, stop here. Upgrading early means no peering and no sync.
 2. Snapshot state: current image tag, `external-node.sh status`, and the saved secret key.
 3. Stop the node (`./external-node.sh stop`).
 4. `git pull` the setup repo, then `./external-node.sh pull`.

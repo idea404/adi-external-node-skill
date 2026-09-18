@@ -38,9 +38,22 @@ docker logs --tail 200 adi_mainnet_external_node | grep -E 'Connected to peer|re
 
 ## `state at block is pruned ...` at startup
 
-**Cause:** the configured L1 RPC is a pruned endpoint. The node needs historical Ethereum state for genesis/upgrade discovery.
+**Cause:** the configured L1 RPC is a pruned endpoint. The node needs historical Ethereum state for genesis/upgrade discovery, and pruned endpoints answer recent blocks only.
 
 **Action:** point `--l1-rpc-url` / `GENERAL_L1_RPC_URL` at an archive-capable L1 RPC and restart. This is a hard requirement, not a tuning knob.
+
+Which L1 RPC: mainnet nodes need an archive Ethereum L1 endpoint (mainnet ENs read Ethereum mainnet), testnet nodes need an archive Sepolia endpoint. The operator usually already has one configured; ask before shopping for a new one, because free public endpoints mostly are not archive.
+
+To test a candidate before restarting the node, ask it for state at an old block. A pruned endpoint errors, an archive one answers:
+
+```bash
+# Old block (100000) on a known address. Archive answers with a balance,
+# pruned answers an error like "state at block #100000 is pruned".
+curl -s -X POST "$L1_RPC" -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"eth_getBalance","params":["0x00000000219ab540356cBB839Cbe05303d7705Fa","0x186A0"],"id":1}'
+```
+
+Two traps seen in practice: an API key can be valid but out of quota (HTTP 429 monthly capacity exceeded), and a provider's free tier can serve recent state while refusing historical. Test the call the node actually makes, not just `eth_chainId`.
 
 ## Write errors / permission denied on the data directory
 
@@ -70,7 +83,14 @@ Transactions submitted to the external node go into its local mempool and are fo
 
 **Cause:** `network_secret_key` / `EXTERNAL_NETWORK_SECRET_KEY` changed between starts. Losing it forces a full resync.
 
-**Action:** find the original value before doing anything else. It was printed once in the logs at first start (`EXTERNAL_NETWORK_SECRET_KEY not provided, generated automatically: <hex>`), and `adi-node` stores it in `~/.adi-node/state.json`. Restore it and restart. Do not generate a new key while trying to recover an existing node's identity.
+**Action:** find the original value before doing anything else, in this order:
+
+1. The running container's config, which is the fastest and works even if the logs are gone: `docker inspect adi_mainnet_external_node --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -i secret`
+2. An ops note or password manager entry for this node.
+3. The first start's output, if it was captured (`EXTERNAL_NETWORK_SECRET_KEY not provided, generated automatically: <hex>`).
+4. `adi-node`'s state file, `~/.adi-node/state.json`, if the CLI was ever used on this machine.
+
+Restore the value and restart with it. Do not generate a new key while trying to recover an existing node's identity.
 
 ## "Node is running but eth_blockNumber fails"
 
@@ -85,7 +105,16 @@ for p in 3050 3071 3312 3060; do (nc -z 127.0.0.1 $p && echo "$p open") || echo 
 
 ## Escalation
 
-Escalate to ADI (with `scripts/en-status.sh` output, the container image tag, and the last 200 log lines) when:
+Escalate when the diagnosis points outside this machine, to whoever operates the node's ADI contact or the foundation's node-ops channel. Include:
+
+- `scripts/en-status.sh` output
+- the container image tag (`docker ps` shows it)
+- the last 200 log lines
+- which network (mainnet or testnet) and how long the node has been running
+
+Escalate when:
 
 - the main node and the external node disagree on height after the EN reports `eth_syncing: false`
-- `verifier authorization failures` or `missing VerifyBatchResult` recur - a coordinated upgrade was announced and the published image does not start
+- `verifier authorization failures` or `missing VerifyBatchResult` recur
+- a coordinated upgrade is live (the main node has moved) and the published image does not start
+- the node has been stuck at the same height for hours with a healthy L1 RPC, clean logs, and peers connected

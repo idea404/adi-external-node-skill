@@ -37,7 +37,8 @@ Env vars removed in v0.20.12: `sequencer_block_replay_download_address`, `sequen
 
 `BOOT_NODE_URLS` falls back to these per-network defaults (from `external-node.sh` in the setup repo):
 
-- mainnet: `enode://0x433c50a2c2b4091330edff3bde14be9913f7fcde35c5267f3b2281b7031923518b18f3c99b83bf5edb2dbe708d9ec119cceaf4012f5f601525beaf9c564dd57a@74.162.154.230:3060` - testnet: `enode://0x89317fb81e979bd5b0d102f2c3da3ccb569cf2b2802fb0c3af562b625b1d695dc44b5c6ef3848697dce61e6cc9a8f9fe6ad89ff08cfb2ab4e51bc7a55986ee6f@20.233.0.124:3060`
+- mainnet: `enode://0x433c50a2c2b4091330edff3bde14be9913f7fcde35c5267f3b2281b7031923518b18f3c99b83bf5edb2dbe708d9ec119cceaf4012f5f601525beaf9c564dd57a@74.162.154.230:3060`
+- testnet: `enode://0x89317fb81e979bd5b0d102f2c3da3ccb569cf2b2802fb0c3af562b625b1d695dc44b5c6ef3848697dce61e6cc9a8f9fe6ad89ff08cfb2ab4e51bc7a55986ee6f@20.233.0.124:3060`
 
 Only override these if ADI publishes replacements; a stale boot node is the usual cause of a node that runs but never finds peers.
 
@@ -47,7 +48,7 @@ The one breaking change operators hit. Full checklist lives in the setup repo (`
 
 **Preconditions**
 
-- ADI has announced the main node is on v0.20.12. Coordinated upgrade: old and new nodes do not peer, and their verification transport is incompatible.
+- The main node is on v0.20.12 (confirm it has moved before upgrading yours). Coordinated upgrade: old and new nodes do not peer, and their verification transport is incompatible.
 - The v0.13.0 node is stopped.
 - The existing P2P secret key is at hand (or will be generated on first start).
 

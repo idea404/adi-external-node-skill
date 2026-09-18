@@ -59,7 +59,10 @@ skills/adi-external-node/
 
 The skill is written for an agent acting on someone's production node, so it encodes hard rules rather than relying on the model's judgement:
 
-- never delete the chain data directory or regenerate the P2P secret key (either forces a full resync from genesis) - upgrades are treated as coordinated, network-wide events. The skill refuses to start one unless ADI has announced the main node is upgraded - diagnosis comes before change, via a script that cannot mutate anything - rollback is a documented path (revert the setup repo, restart with the same key), not an improvised one
+- never delete the chain data directory or regenerate the P2P secret key (either forces a full resync from genesis)
+- upgrades are treated as coordinated, network-wide events, gated on the upgrade actually being live for the network
+- diagnosis comes before change, via a script that cannot mutate anything
+- rollback is a documented path (revert the setup repo, restart with the same key), not an improvised one
 
 ## Updating
 
