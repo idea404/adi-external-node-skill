@@ -79,7 +79,33 @@ What each tells you:
 
 Practical rule: if the main node's `major.minor.patch` is ahead of your node's `web3_clientVersion`, the cluster has moved and an EN upgrade is likely coming or live. Confirm against the repo pin and the `upgrades/` guide before acting.
 
-Not available: the container registry (`harbor.sde.adifoundation.ai`) requires authentication for tag listing and manifest reads, so you cannot enumerate published image tags anonymously. The repo compose pin is the supported way to learn which image is intended.
+### The container registry is readable (correcting a common assumption)
+
+The registry at `harbor.sde.adifoundation.ai` allows **anonymous reads**. No account, no token setup: `docker` handles the token exchange against `/service/token` on its own, and any bearer token you fetch by hand is issued without credentials. So published image tags are enumerable and you can check what exists before pulling:
+
+```bash
+# Every published tag, including ones the setup repo has not pinned yet
+TOKEN=$(curl -s "https://harbor.sde.adifoundation.ai/service/token?service=harbor-registry&scope=repository:ghpc/adi-foundation-labs/server:pull" | jq -r .token)
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://harbor.sde.adifoundation.ai/v2/ghpc/adi-foundation-labs/server/tags/list" | jq -r '.tags[]'
+```
+
+Or the simpler form, which also works without credentials:
+
+```bash
+docker manifest inspect harbor.sde.adifoundation.ai/ghpc/adi-foundation-labs/server:v0.20.12-b2 >/dev/null && echo exists
+```
+
+This matters because the image repository and the setup repo move on different schedules. A version can be published as an image and tagged on GitHub while the EN compose file still pins something older. Before trusting any "the latest is X" claim, check that X actually exists as an image.
+
+Two image repositories, depending on version:
+
+| Version range | Repository |
+|---|---|
+| `v0.13.0-b4` and earlier | `adi-public/chain/external-node` (tags stop at `v0.19.0-b3`) |
+| `v0.20.12-b1` and later | `ghpc/adi-foundation-labs/server` |
+
+The current image name is the one in the compose file. The `latest` tag in `ghpc/adi-foundation-labs/server` tracks the newest build (currently well ahead of the pinned EN version), so never pull `latest` for an EN: use the tag the repo pins.
 
 When the signals disagree and you cannot resolve it, that is the point to ask the operator. Do not upgrade on a repo tag alone.
 

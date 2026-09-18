@@ -72,7 +72,9 @@ curl -s -X POST http://localhost:3050 -H 'Content-Type: application/json' \
 
 Read the working-tree file *and* `origin/main`, because they differ whenever the checkout is behind and a stale checkout reports an old version as though it were current.
 
-A repo tag newer than the running image means an upgrade exists. The main node's `web3_clientVersion` is a live signal that the cluster has moved, but it does not track EN image numbering: mainnet currently answers `zksync-os/v0.21.1` while the EN is pinned at `v0.20.12-b1`. Use it to see that the cluster is ahead of your node, and trust the repo pin for what the EN should actually run. Comparing them means `major.minor.patch` only; the RPC drops the image tag's `-bN` suffix. Details and caveats: [references/network.md](references/network.md).
+A repo tag newer than the running image means an upgrade exists. The main node's `web3_clientVersion` is a live signal that the cluster has moved, but it does not track EN image numbering: mainnet currently answers `zksync-os/v0.21.1` while the EN is pinned at `v0.20.12-b1`. Use it to see that the cluster is ahead of your node, and trust the repo pin for what the EN should actually run. Comparing them means `major.minor.patch` only; the RPC drops the image tag's `-bN` suffix.
+
+Published image tags are also readable, which is worth doing before believing any "latest version is X" claim: the registry allows anonymous reads, and images are often published before the setup repo pins them. See [references/network.md](references/network.md) for the commands, and note never to pull `latest` for an EN.
 
 When the signals disagree and you cannot resolve it, ask the operator. Never upgrade on a repo tag alone.
 
