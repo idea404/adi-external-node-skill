@@ -10,12 +10,7 @@
 | Default data dir | `./mainnet_data` | `./testnet_data` |
 | Setup script flag | (default) | `--testnet` |
 
-Chain IDs and RPC endpoints verified against the live networks (`eth_chainId`,
-2026-09). The node's own client version is reported by
-`web3_clientVersion`. Mainnet currently answers `zksync-os/v0.21.1` on the
-main node, while the published external node image is `v0.20.12-b1`. Those
-numbers differ and that is expected: the main node and the external node are
-separate builds.
+Chain IDs and RPC endpoints verified against the live networks (`eth_chainId`, 2026-09). The node's own client version is reported by `web3_clientVersion`. Mainnet currently answers `zksync-os/v0.21.1` on the main node, while the published external node image is `v0.20.12-b1`. Those numbers differ and that is expected: the main node and the external node are separate builds.
 
 ## Ports
 
@@ -27,8 +22,7 @@ separate builds.
 | 3312 | TCP | Prometheus metrics (`observability_prometheus_port`) |
 | 3054 | TCP | **removed**, HTTP replay, v0.13.0 only |
 
-Both TCP and UDP 3060 must be reachable outbound. If a firewall allows only
-one of the two, the node may boot but never peer.
+Both TCP and UDP 3060 must be reachable outbound. If a firewall allows only one of the two, the node may boot but never peer.
 
 ## Versions
 
@@ -37,69 +31,43 @@ one of the two, the node may boot but never peer.
 | `v0.13.0-b4` and earlier | HTTP replay via `replay.adifoundation.ai` + `proof-sync` sidecar | includes `proof-sync`, `cloudflared-tcp-proxy`, port 3054 |
 | `v0.20.12-b1` (current) | P2P (`network_enabled=true`, port 3060) | no sidecars, no proof storage; requires `network_secret_key` and `network_boot_nodes` |
 
-Env vars removed in v0.20.12: `sequencer_block_replay_download_address`,
-`sequencer_block_replay_server_address`, `prover_api_object_store_*`,
-`l1_sender_pubdata_mode`. `general_l1_rpc_url` was renamed to
-`l1_provider_rpc_url` (the `GENERAL_L1_RPC_URL` env var keeps working).
-ENs stopped using proof storage entirely; the `proof-sync` container in an
-older checkout is legacy.
+Env vars removed in v0.20.12: `sequencer_block_replay_download_address`, `sequencer_block_replay_server_address`, `prover_api_object_store_*`, `l1_sender_pubdata_mode`. `general_l1_rpc_url` was renamed to `l1_provider_rpc_url` (the `GENERAL_L1_RPC_URL` env var keeps working). ENs stopped using proof storage entirely; the `proof-sync` container in an older checkout is legacy.
 
 ## Boot nodes
 
-`BOOT_NODE_URLS` falls back to these per-network defaults (from
-`external-node.sh` in the setup repo):
+`BOOT_NODE_URLS` falls back to these per-network defaults (from `external-node.sh` in the setup repo):
 
-- mainnet: `enode://0x433c50a2c2b4091330edff3bde14be9913f7fcde35c5267f3b2281b7031923518b18f3c99b83bf5edb2dbe708d9ec119cceaf4012f5f601525beaf9c564dd57a@74.162.154.230:3060`
-- testnet: `enode://0x89317fb81e979bd5b0d102f2c3da3ccb569cf2b2802fb0c3af562b625b1d695dc44b5c6ef3848697dce61e6cc9a8f9fe6ad89ff08cfb2ab4e51bc7a55986ee6f@20.233.0.124:3060`
+- mainnet: `enode://0x433c50a2c2b4091330edff3bde14be9913f7fcde35c5267f3b2281b7031923518b18f3c99b83bf5edb2dbe708d9ec119cceaf4012f5f601525beaf9c564dd57a@74.162.154.230:3060` - testnet: `enode://0x89317fb81e979bd5b0d102f2c3da3ccb569cf2b2802fb0c3af562b625b1d695dc44b5c6ef3848697dce61e6cc9a8f9fe6ad89ff08cfb2ab4e51bc7a55986ee6f@20.233.0.124:3060`
 
-Only override these if ADI publishes replacements; a stale boot node is the
-usual cause of a node that runs but never finds peers.
+Only override these if ADI publishes replacements; a stale boot node is the usual cause of a node that runs but never finds peers.
 
 ## Upgrade: v0.13.0 → v0.20.12
 
-The one breaking change operators hit. Full checklist lives in the setup repo
-(`upgrades/v0.13.0_to_v0.20.12.md`); this is the operational short form.
+The one breaking change operators hit. Full checklist lives in the setup repo (`upgrades/v0.13.0_to_v0.20.12.md`); this is the operational short form.
 
 **Preconditions**
 
-- ADI has announced the main node is on v0.20.12. Coordinated upgrade: old and
-  new nodes do not peer, and their verification transport is incompatible.
+- ADI has announced the main node is on v0.20.12. Coordinated upgrade: old and new nodes do not peer, and their verification transport is incompatible.
 - The v0.13.0 node is stopped.
 - The existing P2P secret key is at hand (or will be generated on first start).
 
 **Steps**
 
 1. Stop: `./external-node.sh stop`, confirm with `./external-node.sh status`.
-2. Pull the repo: `git pull origin main`. This brings the new compose, the new
-   genesis (with `execution_version` removed), and the v0.20.12 image tag.
-   Local compose edits will block the pull; the CLI and the script both treat
-   a diverged checkout as a hard error rather than merging.
-3. Delete legacy variables from any local `.env` or override file: the
-   `sequencer_block_replay_*`, `prover_api_object_store_*`, and
-   `l1_sender_pubdata_mode` entries.
+2. Pull the repo: `git pull origin main`. This brings the new compose, the new genesis (with `execution_version` removed), and the v0.20.12 image tag. Local compose edits will block the pull; the CLI and the script both treat a diverged checkout as a hard error rather than merging.
+3. Delete legacy variables from any local `.env` or override file: the `sequencer_block_replay_*`, `prover_api_object_store_*`, and `l1_sender_pubdata_mode` entries.
 4. Port changes: drop 3054, add 3060 TCP **and** UDP.
 5. Pull the image: `./external-node.sh pull`.
-6. Start with the L1 RPC and (on restarts) the saved key:
-   `./external-node.sh start --l1-rpc-url <archive-l1-rpc> --external-network-secret-key <saved-key>`
-7. Verify: `resolved external IP (STUN)` and `Connected to peer <id>` in the
-   logs, `Replay block` progressing, `scripts/en-status.sh` reporting
-   `SYNCING` or `HEALTHY`, and no `verifier authorization failures`.
+6. Start with the L1 RPC and (on restarts) the saved key: `./external-node.sh start --l1-rpc-url <archive-l1-rpc> --external-network-secret-key <saved-key>`
+7. Verify: `resolved external IP (STUN)` and `Connected to peer <id>` in the logs, `Replay block` progressing, `scripts/en-status.sh` reporting `SYNCING` or `HEALTHY`, and no `verifier authorization failures`.
 
-The `proof-sync` container and the `cloudflared-tcp-proxy` service are removed
-by the new compose. If they still appear in `docker ps`, the stack was
-recreated from the old compose (usually a checkout that was not pulled).
+The `proof-sync` container and the `cloudflared-tcp-proxy` service are removed by the new compose. If they still appear in `docker ps`, the stack was recreated from the old compose (usually a checkout that was not pulled).
 
 ## Version-specific notes
 
-- **v0.20.12 changed two logging defaults**: `observability_log_format` is now
-  `json` and color is off. Logs are still greppable, but expect JSON lines.
-- **`sequencer_revm_consistency_checker_enabled`** flipped to `true`; it can be
-  disabled for faster local startup.
-- **The CLI (`adi-node`) alternative.** If the operator has the `adi-node`
-  binary installed, `adi-node health`, `status`, and `upgrade` perform the same
-  operations with more automation (it detects the running node, persists the
-  key, and refuses to upgrade a dirty checkout). Prefer it when present; this
-  skill is the path when only Docker and the setup script are available.
+- **v0.20.12 changed two logging defaults**: `observability_log_format` is now `json` and color is off. Logs are still greppable, but expect JSON lines.
+- **`sequencer_revm_consistency_checker_enabled`** flipped to `true`; it can be disabled for faster local startup.
+- **The CLI (`adi-node`) alternative.** If the operator has the `adi-node` binary installed, `adi-node health`, `status`, and `upgrade` perform the same operations with more automation (it detects the running node, persists the key, and refuses to upgrade a dirty checkout). Prefer it when present; this skill is the path when only Docker and the setup script are available.
 
 ## Where things live
 
