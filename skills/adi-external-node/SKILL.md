@@ -51,16 +51,30 @@ The node itself tells you almost everything (versions, ports, peers, sync). For 
 | Network endpoints, container prefixes, data dirs, boot nodes | `references/network.md`, or `external-node.sh` in the checkout |
 | Contract addresses, ABIs, bridge details | `docs.adi.foundation` and the `ADI-Stack-Contracts` repo. Not needed to run a node |
 
-Announcement discipline matters: ADI upgrades clusters as coordinated events, so "is this upgrade live yet" is a real question with a real answer, not a formality. Read it off the repo where you can:
+Announcement discipline matters: ADI upgrades clusters as coordinated events, so "is this upgrade live yet" is a real question with a real answer, not a formality. Three signals, and you should read all three:
 
 ```bash
-# What version does the checkout want, and what is running?
-cd ~/ADI-Stack-EN-Setup-script && git fetch --quiet && git log --oneline -5
-grep -o 'EN_VERSION:-[^}]*' docker-compose.<network>.yml
+# What is running here
 docker ps --format '{{.Image}}' | grep external_node
+
+# What this checkout wants, and whether upstream has moved past it
+cd ~/ADI-Stack-EN-Setup-script && git fetch --quiet origin
+grep -o 'EN_VERSION:-[^}]*' docker-compose.<network>.yml          # what you would deploy
+git show origin/main:docker-compose.<network>.yml | grep -o 'EN_VERSION:-[^}]*'   # what is current
+git rev-list --count HEAD..origin/main                            # 0 = checkout is current
+
+# What the cluster runs (main node), vs this node
+curl -s -X POST https://rpc.adifoundation.ai -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}'
+curl -s -X POST http://localhost:3050 -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}'
 ```
 
-A version in the compose file that is newer than what is running means an upgrade exists. It does not by itself mean the network is ready: the main node moves first, and an EN upgraded early will not peer. When the repo shows a new version but you cannot confirm the main node has moved, ask the operator to confirm before upgrading. Never infer readiness from the image tag alone.
+Read the working-tree file *and* `origin/main`, because they differ whenever the checkout is behind and a stale checkout reports an old version as though it were current.
+
+A repo tag newer than the running image means an upgrade exists. The main node's `web3_clientVersion` is a live signal that the cluster has moved, but it does not track EN image numbering: mainnet currently answers `zksync-os/v0.21.1` while the EN is pinned at `v0.20.12-b1`. Use it to see that the cluster is ahead of your node, and trust the repo pin for what the EN should actually run. Comparing them means `major.minor.patch` only; the RPC drops the image tag's `-bN` suffix. Details and caveats: [references/network.md](references/network.md).
+
+When the signals disagree and you cannot resolve it, ask the operator. Never upgrade on a repo tag alone.
 
 Deliberately not carried here: contract addresses and ABIs, bridge mechanics, L3 deployment, token details. None of it affects running or monitoring an external node, and stale copies are worse than none.
 
