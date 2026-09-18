@@ -54,7 +54,8 @@ It prints containers, head block, lag vs the network reference, block rate, P2P 
 | `SYNCING` | 0 | behind but the head is advancing (normal, leave it alone) |
 | `STALLED` | 1 | behind, head not advancing in the sample window |
 | `DEGRADED` | 1 | up but no P2P peers, or RPC not answering yet |
-| `DOWN` | 2 | no container, no RPC |
+| `DOWN` | 2 | no container on this machine, no RPC |
+| `STOPPED` | 2 | container exists but is not running |
 | `UNKNOWN` | 1 | node up, reference RPC unreachable |
 
 Raw probes, if the script is not usable:
@@ -75,7 +76,7 @@ curl -s http://localhost:3071/status/health
 curl -s http://localhost:3071/status/pipeline
 
 # peers and P2P state
-curl -s http://localhost:3312/metrics | grep -E 'connected_peers'
+curl -s http://localhost:3312/metrics | grep -E 'network[._]connected_peers'
 docker logs --tail 200 adi_mainnet_external_node 2>&1 | grep -E 'Connected to peer|resolved external IP|Replay block'
 ```
 

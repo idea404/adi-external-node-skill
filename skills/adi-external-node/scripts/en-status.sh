@@ -75,6 +75,7 @@ eth_block() {
 say "== containers =="
 NETWORK=""
 CONTAINER_STATUS=""
+STOPPED_CONTAINER=""
 if command -v docker >/dev/null 2>&1; then
   PS="$(docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}' 2>/dev/null)"
   if [[ -z "$PS" ]]; then
@@ -93,6 +94,18 @@ if command -v docker >/dev/null 2>&1; then
           ;;
       esac
     done <<< "$PS"
+  fi
+
+  # A stopped-but-present node is a different situation from "nothing here".
+  # Look for it so the verdict can say which, and so the network is still
+  # known (the reference RPC depends on it).
+  if [[ -z "$CONTAINER_STATUS" ]]; then
+    STOPPED_RAW="$(docker ps -a --format '{{.Names}}\t{{.Status}}' 2>/dev/null | grep -E '_external_node' | head -1)"
+    if [[ -n "$STOPPED_RAW" ]]; then
+      STOPPED_CONTAINER="$(printf '%s' "$STOPPED_RAW" | cut -f1)"
+      note "$STOPPED_RAW  (stopped)"
+      NETWORK="$(printf '%s' "$STOPPED_CONTAINER" | sed -n 's/^adi_\([a-z0-9]*\)_external_node$/\1/p')"
+    fi
   fi
 else
   note "docker not found; relying on HTTP probes only"
@@ -142,7 +155,8 @@ say "== peers and pipeline =="
 PEERS=""
 PROM_BODY="$(http_get "$PROM/metrics")"
 if [[ -n "$PROM_BODY" ]]; then
-  PEERS="$(printf '%s\n' "$PROM_BODY" | sed -n 's/^network\.connected_peers[^ ]* \([0-9][0-9]*\).*/\1/p' | head -1)"
+  # Metric renamed network.connected_peers -> network_connected_peers in v0.20.12.
+  PEERS="$(printf '%s\n' "$PROM_BODY" | sed -n 's/^network[._]connected_peers[^ ]* \([0-9][0-9]*\).*/\1/p' | head -1)"
   note "connected peers: ${PEERS:-unknown}"
 else
   note "prometheus unreachable at $PROM"
@@ -189,7 +203,14 @@ if [[ -z "$HEAD" ]]; then
     note "A node that just started takes minutes before RPC serves. If it has been longer, check: docker logs --tail 100 <container>"
     exit 1
   fi
-  say "DOWN: no external node container and no RPC."
+  if [[ -n "$STOPPED_CONTAINER" ]]; then
+    say "STOPPED: $STOPPED_CONTAINER exists but is not running."
+    note "Start it: cd <setup-repo> && ./external-node.sh [--testnet] start --l1-rpc-url <archive-l1-rpc>"
+    note "Reuse the saved P2P secret key, or the node resyncs from scratch."
+    exit 2
+  fi
+  say "DOWN: no external node container on this machine and no RPC."
+  note "The node may never have been installed here, or it runs under a different container name."
   exit 2
 fi
 

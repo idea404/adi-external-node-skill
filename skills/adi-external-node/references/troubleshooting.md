@@ -24,7 +24,8 @@ Distinguish the two cases before acting:
 ## No P2P peers
 
 ```bash
-curl -s http://localhost:3312/metrics | grep connected_peers
+# works on both spellings: v0.13 network.connected_peers, v0.20.12 network_connected_peers
+curl -s http://localhost:3312/metrics | grep -E 'network[._]connected_peers'
 docker logs --tail 200 adi_mainnet_external_node | grep -E 'Connected to peer|resolved external IP'
 ```
 

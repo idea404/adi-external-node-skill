@@ -35,7 +35,9 @@ The skill carries one script, `scripts/en-status.sh`, a read-only health snapsho
 | `SYNCING` | 0 | behind, head advancing (normal) |
 | `STALLED` | 1 | behind, head not advancing |
 | `DEGRADED` | 1 | up, but no peers or RPC not answering yet |
-| `DOWN` | 2 | no container, no RPC |
+| `UNKNOWN` | 1 | node up, reference RPC unreachable |
+| `DOWN` | 2 | no container on this machine, no RPC |
+| `STOPPED` | 2 | container exists but is not running |
 
 ```bash
 bash skills/adi-external-node/scripts/en-status.sh
