@@ -36,6 +36,34 @@ docker logs --tail 200 adi_mainnet_external_node | grep -E 'Connected to peer|re
 3. **Version mismatch.** A v0.13.0 node cannot peer with a v0.20.12 network. Check the image tag; if the network already upgraded, the node must too.
 4. **Port already taken** by an old container still bound to 3060. Check with `docker ps -a` for stopped-but-not-removed containers.
 
+### A low peer count is expected, and the number is not a health target
+
+The P2P network is in a transitional stage: traffic is exchanged with the central sequencer, not a full peer mesh. ADI has stated that full-fledged P2P is still in progress, so `network_connected_peers 1` is a normal, healthy reading. Do not diagnose on a low peer count alone, and do not expect the count to climb with more boot nodes.
+
+What actually matters is whether blocks are arriving, which the sync verdict already answers.
+
+### Known cluster-side peer failures (do not rebuild a node over these)
+
+Operators across several providers hit a recurring pattern where nodes could not find peers at all, with log and metric signatures like:
+
+```
+discv5::service: No known_closest_peers found. Return empty result without sending query.
+zksync_os_network::metrics: unknown counter metric key=KeyName("p2pstream.disconnected_errors")
+
+network_backed_off_peers_too_many_peers 155
+network_too_many_peers                  155
+network_connected_peers                 0
+network_pending_session_failures_outbound 155
+```
+
+This was diagnosed on ADI's side, not the operators', and was resolved by cluster-side fixes plus a node restart. So when you see this exact signature:
+
+- Do **not** wipe the data directory, regenerate the secret key, or rebuild the stack.
+- Confirm outbound TCP and UDP 3060 are permitted, then restart the node once.
+- If it recurs, report it with the metric block above rather than re-installing. It is a known failure mode with a known signature, and the fix has historically been upstream.
+
+This is the one place where escalating is the right call rather than continuing to diagnose locally.
+
 ## `state at block is pruned ...` at startup
 
 **Cause:** the configured L1 RPC is a pruned endpoint. The node needs historical Ethereum state for genesis/upgrade discovery, and pruned endpoints answer recent blocks only.

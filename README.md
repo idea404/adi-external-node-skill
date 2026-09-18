@@ -34,7 +34,7 @@ The skill carries one script, `scripts/en-status.sh`, a read-only health snapsho
 | `HEALTHY` | 0 | caught up |
 | `SYNCING` | 0 | behind, head advancing (normal) |
 | `STALLED` | 1 | behind, head not advancing |
-| `DEGRADED` | 1 | up, but no peers or RPC not answering yet |
+| `DEGRADED` | 1 | container up, RPC not answering yet |
 | `UNKNOWN` | 1 | node up, reference RPC unreachable |
 | `DOWN` | 2 | no container on this machine, no RPC |
 | `STOPPED` | 2 | container exists but is not running |

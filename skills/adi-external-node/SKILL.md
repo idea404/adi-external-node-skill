@@ -46,10 +46,13 @@ The node itself tells you almost everything (versions, ports, peers, sync). For 
 | What | Where |
 |---|---|
 | Node docs (running, monitoring, requirements) | [docs.adi.foundation](https://docs.adi.foundation), page "Run Your Own Node" |
-| **Upgrade signal**, the gate on any upgrade | the `ADI-Stack-EN-Setup-script` checkout: a new version tag in the compose file, plus a guide under `upgrades/` |
-| Compose files, genesis, upgrade guides | the same checkout, `upgrades/` directory |
+| **Version releases** (which build exists, what is latest) | `ADI-Foundation-Labs/ADI-Stack-Server` on GitHub: tags and releases. `gh release list -R ADI-Foundation-Labs/ADI-Stack-Server` |
+| **Published images** (what actually exists to pull) | Harbor, `harbor.sde.adifoundation.ai`. Anonymous reads work; see [network.md](references/network.md) |
+| **Upgrade gate** (what the EN should run) | the `ADI-Stack-EN-Setup-script` checkout: the compose `EN_VERSION` pin, plus the matching guide under `upgrades/` |
 | Network endpoints, container prefixes, data dirs, boot nodes | `references/network.md`, or `external-node.sh` in the checkout |
 | Contract addresses, ABIs, bridge details | `docs.adi.foundation` and the `ADI-Stack-Contracts` repo. Not needed to run a node |
+
+All three version sources are machine-readable and need no account, no mailing list, and no chat channel. Use them directly rather than asking anyone what the current version is.
 
 Announcement discipline matters: ADI upgrades clusters as coordinated events, so "is this upgrade live yet" is a real question with a real answer, not a formality. Three signals, and you should read all three:
 
@@ -94,7 +97,7 @@ It prints containers, head block, lag vs the network reference, block rate, P2P 
 | `HEALTHY` | 0 | caught up (≤5 blocks) |
 | `SYNCING` | 0 | behind but the head is advancing (normal, leave it alone) |
 | `STALLED` | 1 | behind, head not advancing in the sample window |
-| `DEGRADED` | 1 | up but no P2P peers, or RPC not answering yet |
+| `DEGRADED` | 1 | container up, RPC not answering yet |
 | `DOWN` | 2 | no container on this machine, no RPC |
 | `STOPPED` | 2 | container exists but is not running |
 | `UNKNOWN` | 1 | node up, reference RPC unreachable |
@@ -134,6 +137,8 @@ Fresh start + head advancing + RPC serving = **syncing, let it finish**. Full re
 - zero peers and no `Connected to peer` lines
 
 Diagnosis table for each fault: [references/troubleshooting.md](references/troubleshooting.md).
+
+On peer counts: the P2P network is transitional, with traffic exchanged via the central sequencer rather than a full mesh. `network_connected_peers 1` is normal, and the number is not a health target. Judge health by whether the head advances, not by how many peers are connected.
 
 ## Operating the node
 

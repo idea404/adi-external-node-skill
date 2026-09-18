@@ -219,10 +219,13 @@ if [[ -z "$TARGET" ]]; then
   exit 1
 fi
 
+# Peer count is advisory, not a verdict. P2P is transitional on this network
+# (traffic flows via the central sequencer, so 1 peer is normal), and a node
+# can keep syncing without any. Warn, then judge on whether the head moves.
 if [[ -n "$PEERS" && "$PEERS" -eq 0 ]]; then
-  say "DEGRADED: no P2P peers. The node depends on peers (or the main node) to receive blocks."
-  note "Check that outbound TCP+UDP 3060 is allowed and that boot nodes are configured."
-  exit 1
+  say "NOTE: zero P2P peers (network_connected_peers 0)."
+  note "Often a known cluster-side issue, not your node. Check outbound TCP+UDP 3060 first."
+  note "Do not wipe data or regenerate the key. Restart once if blocks have stopped."
 fi
 
 if [[ "$LAG" -le 5 ]]; then
@@ -241,5 +244,10 @@ fi
 
 say "STALLED: $LAG blocks behind and the head did not advance in ${SAMPLE}s."
 note "If the node started recently it may still be replaying; watch the logs for 'Replay block' lines."
-note "If it stays flat, check the broken-signal list in references/troubleshooting.md."
+if [[ -n "$PEERS" && "$PEERS" -eq 0 ]]; then
+  note "Zero peers AND a flat head matches the known cluster-side peer failure. See references/troubleshooting.md."
+  note "Restart once, and report the metric block if it recurs. Do not rebuild the node."
+else
+  note "If it stays flat, check the broken-signal list in references/troubleshooting.md."
+fi
 exit 1
