@@ -76,6 +76,8 @@ npx skills add ./ --list
 
 `en-status.sh` was exercised against the live mainnet reference RPC and against a fake node in each state (syncing, caught up, stalled, no peers) to confirm every verdict and exit code.
 
+It was then run against a real testnet node (v0.20.12-b1, replaying from genesis on an Ubuntu box) and driven by a separate agent session: the agent read the skill, ran the script, reported `SYNCING` as normal rather than a fault, and declined to restart the node to "clear" the alarm. Two bugs came out of that run and are fixed: the connected-peer metric name, and a stopped container being reported as no container at all.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
